@@ -1,7 +1,13 @@
 import express  from "express"
 import jwt from "jsonwebtoken"
 import userModel from "../models/user.model.js"
+import { authenticate } from "../middleware/auth.middleware.js"
+import bcrypt from "bcryptjs"
+import dotenv from"dotenv"
+dotenv.config()
+
 const app = express()
+
 app.use(express.json())
  app.get ("/api",(req,res)=>{
     
@@ -15,14 +21,14 @@ app.post("/api/register",async(req,res)=>{
       // save to the data ....
 //.....................................
 const user = await userModel.create({
-    email,name,password
+    email,name,password:  await bcrypt.hash(password,10)
 })
 
 //token generate
     const token = jwt.sign({
     id: user._id
 },
-"f63912e21774694f8c34172b1a0f9eeab7b74719c30ff5cc459cf8b2bfbd4740"
+process.env.JWT_SECRET
 )
 res.status(201).json({
     message:"yser create succesfully",
@@ -34,19 +40,42 @@ res.status(201).json({
     
 })
 })
- app.get("/api/auth/me", async(req,res)=>{
-  
-    const authHeader = req.headers.authorization
-
-    console.log(authHeader)
+ app.get("/api/auth/me", authenticate,async(req,res)=>{
+  console.log(req.user)
+  res.status(200).json({
+    data:{
+        user:req.user
+    }
+  })
     
+ })
+ app.post("/api/auth/login",async(req,res)=>{
 
-    const data = jwt.decode(authHeader)
-    console.log(data)
-    const user = await userModel.findById(data.id)
+    const {email,password} = req.body
 
-    console.log(user)
-   
+    const user = await userModel.findOne({
+        email
+    })
+    const isValidPassword = bcrypt.compare(password,user.password)
+
+    if(!isValidPassword ){
+        return res.status(400).json({
+            message:"Invalid email or password"
+        })
+    }
+    const token = jwt.sign({
+        id:user_id
+    }, process.env.JWT_SECRET)
+
+    res.status(200).json({
+        message:"user logged in successfully",
+        data:{
+        user:{
+            email:user.email,
+            name:user.name
+        }
+        },token
+    })
  })
 
 export default app
