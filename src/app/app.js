@@ -12,7 +12,7 @@ app.use(express.json())
  app.get ("/api",(req,res)=>{
     
     res.status(200).json({
-        message:"hello"
+        message:"Motu"
     })
  })
 app.post("/api/register",async(req,res)=>{
